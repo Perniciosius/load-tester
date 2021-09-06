@@ -1,5 +1,5 @@
 use crate::cli::Cli;
-use crate::metrics::Metrics;
+use crate::metrics::ResponseType;
 use reqwest::blocking::Client;
 use reqwest::blocking::RequestBuilder;
 use reqwest::Url;
@@ -8,7 +8,7 @@ use std::time::Instant;
 
 pub fn create_request(
     args: &Cli,
-    metrics: &Mutex<Metrics>,
+    metrics: &Mutex<Vec<ResponseType>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match args.number {
         Some(n) => {
@@ -27,7 +27,7 @@ pub fn create_request(
     Ok(())
 }
 
-fn send_request(args: &Cli, metrics: &Mutex<Metrics>) -> Result<(), Box<dyn std::error::Error>> {
+fn send_request(args: &Cli, metrics: &Mutex<Vec<ResponseType>>) -> Result<(), Box<dyn std::error::Error>> {
     for path in &args.paths {
         let url = Url::parse(format!("{}://{}", args.scheme, args.host).as_str())?.join(&path)?;
         let req = request_builder(&args.method, url);
@@ -39,22 +39,21 @@ fn send_request(args: &Cli, metrics: &Mutex<Metrics>) -> Result<(), Box<dyn std:
         match res {
             Ok(response) => {
                 if response.status().is_success() {
-                    metrics_lock.count_2xx += 1;
+                    metrics_lock.push(ResponseType::Success(response_time));
                 } else if response.status().is_redirection() {
-                    metrics_lock.count_3xx += 1;
+                    metrics_lock.push(ResponseType::Redirect(response_time));
                 } else if response.status().is_client_error() {
-                    metrics_lock.count_4xx += 1;
+                    metrics_lock.push(ResponseType::ClientError(response_time));
                 } else if response.status().is_server_error() {
-                    metrics_lock.count_5xx += 1;
+                    metrics_lock.push(ResponseType::ServerError(response_time));
                 }
-                metrics_lock.response_time.push(response_time);
             }
             Err(e) => {
                 if e.is_timeout() {
-                    metrics_lock.count_timeout += 1;
+                    metrics_lock.push(ResponseType::Timeout);
                 } else {
                     eprintln!("Error: {}", e.to_string());
-                    // return Ok(());
+                    return Ok(());
                 }
             }
         }
