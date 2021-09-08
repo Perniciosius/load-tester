@@ -454,6 +454,7 @@ dependencies = [
  "cli-table",
  "reqwest",
  "rgb",
+ "serde_json",
  "structopt",
  "textplots",
 ]
@@ -759,6 +760,7 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "serde",
+ "serde_json",
  "serde_urlencoded",
  "tokio",
  "tokio-native-tls",
