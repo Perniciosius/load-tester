@@ -10,7 +10,7 @@ pub struct Cli {
     /// Scheme
     #[structopt(short, long, possible_values = &["http", "https"])]
     pub scheme: String,
-    /// List of URL paths
+    /// List of URL paths (space separated)
     #[structopt(short, long, default_value = "/")]
     pub paths: Vec<String>,
     
@@ -32,8 +32,11 @@ pub struct Cli {
 
     /// Request body (path to *.json file)
     #[structopt(short, long, parse(from_os_str))]
-    pub body: Option<PathBuf>
+    pub body: Option<PathBuf>,
 
+    /// List of Request header (space separated) (format: "key=value")
+    #[structopt(long)]
+    pub headers: Option<Vec<String>>
 }
 
 impl Cli {

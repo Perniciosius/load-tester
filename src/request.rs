@@ -1,7 +1,13 @@
 use crate::cli::Cli;
 use crate::metrics::ResponseType;
-use reqwest::{blocking::Client, blocking::RequestBuilder, Url};
+use reqwest::{
+    blocking::Client,
+    blocking::RequestBuilder,
+    header::{HeaderMap, HeaderName, HeaderValue},
+    Url,
+};
 use std::collections::HashMap;
+use std::str::FromStr;
 use std::sync::Mutex;
 use std::time::Instant;
 
@@ -37,6 +43,20 @@ fn send_request(
         let mut req = request_builder(&args.method, url);
         if let Some(value) = json {
             req = req.header("Content-Type", "application/json").json(&value);
+        }
+        if let Some(value) = &args.headers {
+            let mut headers = HeaderMap::new();
+            for i in value {
+                let split = i
+                    .split("=")
+                    .map(|x| String::from(x))
+                    .collect::<Vec<String>>();
+                headers.insert(
+                    HeaderName::from_str(&split[0]).unwrap(),
+                    HeaderValue::from_str(&split[1]).unwrap(),
+                );
+            }
+            req = req.headers(headers);
         }
         let timer = Instant::now();
         let res = req.send();
