@@ -69,6 +69,24 @@ pub fn show_metrics(mutex: std::sync::Arc<std::sync::Mutex<std::vec::Vec<Respons
             avg_calc(&server_error_response_time).cell(),
             "-".cell(),
             avg_calc(&response_time).cell()
+        ],
+        vec![
+            "Maximum Response Time (ms)".cell(),
+            max_calc(&success_response_time).cell(),
+            max_calc(&redirect_response_time).cell(),
+            max_calc(&client_error_response_time).cell(),
+            max_calc(&server_error_response_time).cell(),
+            "-".cell(),
+            max_calc(&response_time).cell()
+        ],
+        vec![
+            "Minimum Response Time (ms)".cell(),
+            min_calc(&success_response_time).cell(),
+            min_calc(&redirect_response_time).cell(),
+            min_calc(&client_error_response_time).cell(),
+            min_calc(&server_error_response_time).cell(),
+            "-".cell(),
+            min_calc(&response_time).cell()
         ]
     ]
     .table()
@@ -118,6 +136,20 @@ fn avg_calc(response_time: &Vec<u128>) -> u128 {
     match response_time.len() {
         0 => 0,
         _ => response_time.iter().sum::<u128>() / response_time.len() as u128
+    }
+}
+
+fn min_calc(response_time: &Vec<u128>) -> u128 {
+    match response_time.len() {
+        0 => 0,
+        _ => *response_time.iter().min().unwrap()
+    }
+}
+
+fn max_calc(response_time: &Vec<u128>) -> u128 {
+    match response_time.len() {
+        0 => 0,
+        _ => *response_time.iter().max().unwrap()
     }
 }
 
