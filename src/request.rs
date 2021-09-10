@@ -17,16 +17,21 @@ pub fn create_request(
     json: &Option<HashMap<String, serde_json::Value>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match args.number {
-        Some(n) => {
-            for _ in 0..n {
-                send_request(args, metrics, json)?;
+        Some(mut n) => {
+            n = (n as f64 / args.paths.len() as f64).round() as u64;
+            for path in &args.paths {
+                for _ in 0..n {
+                    send_request(args, metrics, json, path)?;
+                }
             }
         }
         None => {
             let request_timer = Instant::now();
-            let arg_time = args.time.unwrap();
-            while request_timer.elapsed().as_secs_f64() < arg_time {
-                send_request(args, metrics, json)?;
+            let arg_time = args.time.unwrap() / args.paths.len() as f64;
+            for path in &args.paths {
+                while request_timer.elapsed().as_secs_f64() < arg_time {
+                    send_request(args, metrics, json, path)?;
+                }
             }
         }
     }
@@ -37,51 +42,50 @@ fn send_request(
     args: &Cli,
     metrics: &Mutex<Vec<ResponseType>>,
     json: &Option<HashMap<String, serde_json::Value>>,
+    path: &String,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    for path in &args.paths {
-        let url = Url::parse(format!("{}://{}", args.scheme, args.host).as_str())?.join(&path)?;
-        let mut req = request_builder(&args.method, url);
-        if let Some(value) = json {
-            req = req.header("Content-Type", "application/json").json(&value);
+    let url = Url::parse(format!("{}://{}", args.scheme, args.host).as_str())?.join(&path)?;
+    let mut req = request_builder(&args.method, url);
+    if let Some(value) = json {
+        req = req.header("Content-Type", "application/json").json(&value);
+    }
+    if let Some(value) = &args.headers {
+        let mut headers = HeaderMap::new();
+        for i in value {
+            let split = i
+                .split("=")
+                .map(|x| String::from(x))
+                .collect::<Vec<String>>();
+            headers.insert(
+                HeaderName::from_str(&split[0]).unwrap(),
+                HeaderValue::from_str(&split[1]).unwrap(),
+            );
         }
-        if let Some(value) = &args.headers {
-            let mut headers = HeaderMap::new();
-            for i in value {
-                let split = i
-                    .split("=")
-                    .map(|x| String::from(x))
-                    .collect::<Vec<String>>();
-                headers.insert(
-                    HeaderName::from_str(&split[0]).unwrap(),
-                    HeaderValue::from_str(&split[1]).unwrap(),
-                );
-            }
-            req = req.headers(headers);
-        }
-        let timer = Instant::now();
-        let res = req.send();
-        let response_time = timer.elapsed().as_millis();
-        let mut metrics_lock = metrics.lock().unwrap();
+        req = req.headers(headers);
+    }
+    let timer = Instant::now();
+    let res = req.send();
+    let response_time = timer.elapsed().as_millis();
+    let mut metrics_lock = metrics.lock().unwrap();
 
-        match res {
-            Ok(response) => {
-                if response.status().is_success() {
-                    metrics_lock.push(ResponseType::Success(response_time));
-                } else if response.status().is_redirection() {
-                    metrics_lock.push(ResponseType::Redirect(response_time));
-                } else if response.status().is_client_error() {
-                    metrics_lock.push(ResponseType::ClientError(response_time));
-                } else if response.status().is_server_error() {
-                    metrics_lock.push(ResponseType::ServerError(response_time));
-                }
+    match res {
+        Ok(response) => {
+            if response.status().is_success() {
+                metrics_lock.push(ResponseType::Success(response_time));
+            } else if response.status().is_redirection() {
+                metrics_lock.push(ResponseType::Redirect(response_time));
+            } else if response.status().is_client_error() {
+                metrics_lock.push(ResponseType::ClientError(response_time));
+            } else if response.status().is_server_error() {
+                metrics_lock.push(ResponseType::ServerError(response_time));
             }
-            Err(e) => {
-                if e.is_timeout() {
-                    metrics_lock.push(ResponseType::Timeout);
-                } else {
-                    eprintln!("Error: {}", e.to_string());
-                    return Ok(());
-                }
+        }
+        Err(e) => {
+            if e.is_timeout() {
+                metrics_lock.push(ResponseType::Timeout);
+            } else {
+                eprintln!("Error: {}", e.to_string());
+                return Ok(());
             }
         }
     }
