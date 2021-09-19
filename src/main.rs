@@ -1,7 +1,7 @@
 mod cli;
 mod metrics;
 mod request;
-use metrics::{show_metrics, ResponseType};
+use metrics::{show_metrics, Response};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
@@ -10,7 +10,7 @@ use std::thread;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arc::new(cli::Cli::get_arguments());
-    let metrics = Arc::new(Mutex::new(Vec::<ResponseType>::new()));
+    let metrics = Arc::new(Mutex::new(Vec::<Response>::new()));
     let json_string = Arc::new(check_json_file(&args.body)?);
 
     let mut thread_handler: Vec<std::thread::JoinHandle<()>> = Vec::new();

@@ -1,5 +1,5 @@
 use crate::cli::Cli;
-use crate::metrics::ResponseType;
+use crate::metrics::{Response, ResponseType};
 use reqwest::{
     blocking::Client,
     blocking::RequestBuilder,
@@ -13,7 +13,7 @@ use std::time::Instant;
 
 pub fn create_request(
     args: &Cli,
-    metrics: &Mutex<Vec<ResponseType>>,
+    metrics: &Mutex<Vec<Response>>,
     json: &Option<HashMap<String, serde_json::Value>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     match args.number {
@@ -40,7 +40,7 @@ pub fn create_request(
 
 fn send_request(
     args: &Cli,
-    metrics: &Mutex<Vec<ResponseType>>,
+    metrics: &Mutex<Vec<Response>>,
     json: &Option<HashMap<String, serde_json::Value>>,
     path: &String,
 ) -> Result<(), Box<dyn std::error::Error>> {
@@ -71,18 +71,38 @@ fn send_request(
     match res {
         Ok(response) => {
             if response.status().is_success() {
-                metrics_lock.push(ResponseType::Success(response_time));
+                metrics_lock.push(Response {
+                    res_type: ResponseType::Success,
+                    res_time: response_time,
+                    path: path.clone(),
+                });
             } else if response.status().is_redirection() {
-                metrics_lock.push(ResponseType::Redirect(response_time));
+                metrics_lock.push(Response {
+                    res_type: ResponseType::Redirect,
+                    res_time: response_time,
+                    path: path.clone(),
+                });
             } else if response.status().is_client_error() {
-                metrics_lock.push(ResponseType::ClientError(response_time));
+                metrics_lock.push(Response {
+                    res_type: ResponseType::ClientError,
+                    res_time: response_time,
+                    path: path.clone(),
+                });
             } else if response.status().is_server_error() {
-                metrics_lock.push(ResponseType::ServerError(response_time));
+                metrics_lock.push(Response {
+                    res_type: ResponseType::ServerError,
+                    res_time: response_time,
+                    path: path.clone(),
+                });
             }
         }
         Err(e) => {
             if e.is_timeout() {
-                metrics_lock.push(ResponseType::Timeout);
+                metrics_lock.push(Response {
+                    res_type: ResponseType::Timeout,
+                    res_time: 0,
+                    path: path.clone(),
+                });
             } else {
                 eprintln!("Error: {}", e.to_string());
                 return Ok(());
