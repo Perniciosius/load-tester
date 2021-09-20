@@ -36,7 +36,11 @@ pub struct Cli {
 
     /// List of Request header (space separated) (format: "key=value")
     #[structopt(long)]
-    pub headers: Option<Vec<String>>
+    pub headers: Option<Vec<String>>,
+
+    /// Show response for each path separately
+    #[structopt(long)]
+    pub response_per_path: bool
 }
 
 impl Cli {
