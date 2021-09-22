@@ -1,12 +1,15 @@
-mod cli;
 mod metrics;
 mod request;
-use metrics::{show_metrics, Response};
+mod models;
+mod utils;
+use metrics::{show_metrics};
 use std::collections::HashMap;
 use std::fs::read_to_string;
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::thread;
+use models::response::Response;
+use crate::utils::cli;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Arc::new(cli::Cli::get_arguments());

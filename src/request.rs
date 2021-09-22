@@ -1,5 +1,4 @@
-use crate::cli::Cli;
-use crate::metrics::{Response, ResponseType};
+use crate::utils::cli::Cli;
 use reqwest::{
     blocking::Client,
     blocking::RequestBuilder,
@@ -10,6 +9,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Mutex;
 use std::time::Instant;
+use crate::models::{response::Response, response_type::ResponseType};
 
 pub fn create_request(
     args: &Cli,

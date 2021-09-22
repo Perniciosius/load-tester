@@ -1,44 +1,9 @@
 use cli_table::{format::Justify, print_stdout, Cell, Style, Table};
-use rgb::RGB8;
 use std::ops::Deref;
 use textplots::{Chart, ColorPlot, Shape};
+use crate::utils::colors::{*};
+use crate::models::{response_type::ResponseType, response::Response};
 
-const CYAN: RGB8 = RGB8 {
-    r: 49,
-    g: 193,
-    b: 131,
-};
-const YELLOW_GREEN: RGB8 = RGB8 {
-    r: 176,
-    g: 220,
-    b: 100,
-};
-const YELLOW: RGB8 = RGB8 {
-    r: 250,
-    g: 207,
-    b: 83,
-};
-const RED: RGB8 = RGB8 {
-    r: 249,
-    g: 80,
-    b: 83,
-};
-
-#[derive(Clone, PartialEq)]
-pub enum ResponseType {
-    Success,
-    Redirect,
-    ClientError,
-    ServerError,
-    Timeout,
-}
-
-#[derive(Clone)]
-pub struct Response {
-    pub res_type: ResponseType,
-    pub path: String,
-    pub res_time: u128,
-}
 
 pub fn show_metrics(mutex: std::sync::Arc<std::sync::Mutex<std::vec::Vec<Response>>>) {
     let mutex_lock = mutex.lock().unwrap();
